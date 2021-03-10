@@ -4,6 +4,7 @@
   <asx:values>
    <DEVC>
     <CTEXT>download  and upload excel templates in sap</CTEXT>
+    <PACKTYPE>H</PACKTYPE>
    </DEVC>
   </asx:values>
  </asx:abap>

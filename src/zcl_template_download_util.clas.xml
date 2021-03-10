@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Utility class for template download for Asset Mass Process</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+    <WITH_UNIT_TESTS>X</WITH_UNIT_TESTS>
+   </VSEOCLASS>
+   <TPOOL>
+    <item>
+     <ID>I</ID>
+     <KEY>001</KEY>
+     <ENTRY>Do not change the template. Instead, add the data in the corresponding field based on the scenario.</ENTRY>
+     <LENGTH>132</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>002</KEY>
+     <ENTRY>Fields marked with an asterisk (*) are mandatory. After filling the template, upload it for further processing.</ENTRY>
+     <LENGTH>132</LENGTH>
+    </item>
+   </TPOOL>
+   <I18N_TPOOL>
+    <item>
+     <LANGUAGE>D</LANGUAGE>
+     <TEXTPOOL>
+      <item>
+       <ID>I</ID>
+       <KEY>001</KEY>
+       <ENTRY>Ändern Sie die Vorlage nicht. Fügen Sie stattdessen gemäß Szenario Daten im entsprechenden Feld hinzu.</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+      <item>
+       <ID>I</ID>
+       <KEY>002</KEY>
+       <ENTRY>Mit einem Asterisk (*) markierte Felder sind Pflichtfelder. Nach dem Füllen der Vorlage laden Sie diese zur Weiterverarbeitung hoch.</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+     </TEXTPOOL>
+    </item>
+    <item>
+     <LANGUAGE>늑</LANGUAGE>
+     <TEXTPOOL>
+      <item>
+       <ID>I</ID>
+       <KEY>001</KEY>
+       <ENTRY>RPT8 CL_MPA_TEMPLATE_DOWNLOAD_UTIL</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+      <item>
+       <ID>I</ID>
+       <KEY>002</KEY>
+       <ENTRY>RPT8 CL_MPA_TEMPLATE_DOWNLOAD_UTIL</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+     </TEXTPOOL>
+    </item>
+    <item>
+     <LANGUAGE>닱</LANGUAGE>
+     <TEXTPOOL>
+      <item>
+       <ID>I</ID>
+       <KEY>001</KEY>
+       <ENTRY>[Ďŏ∙ŋŏţ∙ċĥąŋğē∙ţĥē∙ţēɱρĺąţē.∙Ĭŋşţēąƌ,∙ąƌƌ∙ţĥē∙ƌąţą∙įŋ∙ţĥē∙ċŏŗŗēşρŏŋƌįŋğ∙ƒįēĺƌ∙ƃąşēƌ∙ŏŋ∙ţĥē∙şċēŋąŗįŏ.∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙]</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+      <item>
+       <ID>I</ID>
+       <KEY>002</KEY>
+       <ENTRY>[Ƒįēĺƌş∙ɱąŗķēƌ∙ŵįţĥ∙ąŋ∙ąşţēŗįşķ∙(*)∙ąŗē∙ɱąŋƌąţŏŗŷ.∙Āƒţēŗ∙ƒįĺĺįŋğ∙ţĥē∙ţēɱρĺąţē,∙űρĺŏąƌ∙įţ∙ƒŏŗ∙ƒűŗţĥēŗ∙ρŗŏċēşşįŋğ.∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙]</ENTRY>
+       <LENGTH>132</LENGTH>
+      </item>
+     </TEXTPOOL>
+    </item>
+   </I18N_TPOOL>
+   <I18N_LINES>
+    <item>
+     <LANGUAGE>D</LANGUAGE>
+    </item>
+    <item>
+     <LANGUAGE>늑</LANGUAGE>
+    </item>
+    <item>
+     <LANGUAGE>닱</LANGUAGE>
+    </item>
+   </I18N_LINES>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>ASSEMBLE_FIELDS_MAPPING</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Assemble the field mapping</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>CONCATENATE_FIELD_LINE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Concatnate the field for title</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>CONSTRUCTOR</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>CONSTRUCTOR</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>COPY_DATA_TO_REF</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Copy the link to reference variable</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>FILLIN_LABEL</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Fill label</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>FILLIN_OTHERS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Fill field length and other properties</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>FIND_FIELD_TYPE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Fill field type</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>FORMAT_DOC</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Format the excel document</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>FORMAT_LABEL</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Format label</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GENERATE_CSV_TEMPLATE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Generate the CSV template</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GENERATE_EXCEL_DATA_BLOCK</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Generate the excel file with data</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GENERATE_EXCEL_TEMPLATE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Generate excel template</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_COMMENT_TEXT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get the comments for template header</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_EXCEPTED_FIELDS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get Mass Transfer excepted field</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_FULL_FIELDS_MAPPING</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get full field mappings</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_INSTANCE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get the class instance</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_STRUCT_PROPERTIES</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get structure peoperties</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>GET_TRANS_MAPPING</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get field mapping</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>RENDER_HEADER</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Render head of the document</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TEMPLATE_DOWNLOAD_UTIL</CLSNAME>
+     <CMPNAME>RENDER_TITLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Render title of the document</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>

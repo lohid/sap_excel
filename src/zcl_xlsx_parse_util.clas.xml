@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Utility class for parsing uploaded file</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+    <WITH_UNIT_TESTS>X</WITH_UNIT_TESTS>
+   </VSEOCLASS>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>CONSTRUCTOR</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>CONSTRUCTOR</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>GC_NR_OBJECT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Number Range Object</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>GET_INSTANCE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get the class instance</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>GET_NUMBER</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get the next number for File ID</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>GO_INSTANCE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Utility Interface for parsing uploaded file</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>GV_TEMPLATE_TYPE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>30 Characters</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>HANDLE_EXCEPTION</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Handle the exception messages</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>MAP_EXCEL_DATA</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Map excel data to internal table</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>MT_DD04L</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Data elements</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>MT_EXCEL_ROWS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>table for index-value pair</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>MT_LINE_INDEX</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Document index in excel</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>PARSE_XLSX</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Parse the xlsx xstring to structure</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>REMOVE_COMMENT_LINE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Remove the comment from uploaded template</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_PARSE_UTIL</CLSNAME>
+     <CMPNAME>SAVE_FILE_TO_DB</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Save the file to datebase table</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
