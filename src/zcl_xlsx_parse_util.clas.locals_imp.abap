@@ -93,7 +93,7 @@
         ENDIF.
 
         "===== get shared strings =====
-        lo_worksheet = lo_workbookpart->get_part_by_id( lt_worksheets[ 1 ]-location ).
+        lo_worksheet = lo_workbookpart->get_part_by_id( lt_worksheets[ 3 ]-location ).
         lx_sheet = lo_worksheet->get_data( ).
         CALL TRANSFORMATION xl_mpa_get_sheet_dimension SOURCE XML lx_sheet RESULT dimension = lv_dim.
 

@@ -140,7 +140,7 @@ CLASS zcl_template_download_util DEFINITION
     METHODS generate_excel_template
       IMPORTING
         !it_field_mapping    TYPE gty_t_field_name_mappings
-        !is_block            TYPE if_salv_export_appendix=>ys_block OPTIONAL
+        it_asset_data        TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data   OPTIONAL
         iv_file_download_ind TYPE abap_bool OPTIONAL
       EXPORTING
         !er_stream           TYPE REF TO data
@@ -271,10 +271,24 @@ CLASS zcl_template_download_util DEFINITION
         io_xlsx_doc         TYPE REF TO cl_xlsx_document
         io_xml_document     TYPE REF TO cl_xml_document
       RETURNING
-        value(ro_stylepart) TYPE REF TO cl_openxml_part
+        VALUE(ro_stylepart) TYPE REF TO cl_openxml_part
       RAISING
         cx_openxml_format
         cx_openxml_not_found.
+    METHODS create_excel_with_sheets
+      IMPORTING it_fields_header     TYPE gty_t_field_name_mappings
+                it_asset_data        TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data
+      RETURNING VALUE(rv_excel_file) TYPE xstring
+      RAISING
+                cx_dynamic_check
+                cx_openxml_format
+                cx_openxml_not_allowed
+                cx_openxml_not_found.
+    METHODS get_asset_data
+      IMPORTING
+        ix_file         TYPE xstring
+      RETURNING
+        VALUE(r_result) TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data.
 ENDCLASS.
 
 
@@ -701,23 +715,25 @@ CLASS zcl_template_download_util IMPLEMENTATION.
                    CHANGING ct_blocks        = lt_blocks ).
 
     " Append the block for file download with data
-    IF is_block IS NOT INITIAL.
-      INSERT is_block INTO lt_blocks INDEX 3.
-    ENDIF.
+*    IF is_block IS NOT INITIAL.
+*      INSERT is_block INTO lt_blocks INDEX 3.
+*    ENDIF.
 
     GET REFERENCE OF lt_blocks INTO lr_appendix.
     lo_config->if_salv_export_appendix~set_blocks( lr_appendix ).
 
-    lo_tool_xls->read_result( IMPORTING
-                                content = lv_content  ).
+    lo_tool_xls->read_result( IMPORTING content = lv_content  ).
 
 *    add_worksheet( CHANGING cv_doc = lv_content ).
 
+    DATA(lv_excel_xstring) = create_excel_with_sheets( it_fields_header = it_field_mapping
+                                                       it_asset_data = it_asset_data ).
+
     " Format excel (hide structure fields, delete freeze line, add font)
     format_doc( EXPORTING
-                  iv_source_doc        = lv_content
+                  iv_source_doc        = lv_excel_xstring
                   it_fields_header     = it_field_mapping
-                  is_block             = is_block
+*                  is_block             = is_block
                   iv_file_download_ind = iv_file_download_ind
                 IMPORTING
                   ev_target_doc        = lv_template_doc ).
@@ -740,6 +756,155 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
+
+  METHOD create_excel_with_sheets.
+
+    DATA: lo_doc               TYPE REF TO zif_mpa_xlsx_doc,
+          lt_sheet_info        TYPE zcl_mpa_xlsx=>gty_th_sheet_info,
+          lo_sheet             TYPE REF TO zif_mpa_xlsx_sheet,
+          lo_sheet_2           TYPE REF TO zif_mpa_xlsx_sheet,
+          lo_sheet_3           TYPE REF TO zif_mpa_xlsx_sheet,
+          lt_file              TYPE cpt_x255,
+          lv_filename          TYPE localfile,
+          lv_bytes_transferred TYPE i.
+
+    DATA(lo_xlsx) = zcl_mpa_xlsx=>get_instance( ).
+    lo_doc = lo_xlsx->create_doc( ).
+
+
+
+    lt_sheet_info = lo_doc->get_sheets( ).
+    lo_sheet = lo_doc->get_sheet_by_id( lt_sheet_info[ 1 ]-sheet_id ).
+    lo_sheet->change_sheet_name( iv_new_name = 'Data' ). "not working lohid
+    lo_sheet->set_cell_content( iv_row = 1 iv_column = 1 iv_value = gv_title ).
+
+    DATA lt_comment TYPE string_table.
+    " get the commented text for excel template
+    get_comment_text( IMPORTING et_comment = lt_comment ).
+
+    DATA lv_row_num TYPE i VALUE 2.
+    LOOP AT lt_comment INTO DATA(lv_comment).
+      CONCATENATE gc_comment_symbol lv_comment INTO DATA(lv_remark) SEPARATED BY space.
+
+      " Create cell for comments
+      lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = 1 iv_value = lv_remark ).
+      lv_row_num += 1.
+
+    ENDLOOP.
+
+    DATA lv_col_num TYPE i VALUE 1.
+    " Create the technical field row for the template
+    LOOP AT it_fields_header INTO DATA(ls_field_header).
+
+      IF ls_field_header-stru_name IS NOT INITIAL.
+        lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = ls_field_header-stru_name ).
+      ENDIF.
+      lv_col_num += 1.
+    ENDLOOP.
+
+
+    lv_col_num = 1.
+    lv_row_num += 1.
+    "Create the label row for the template
+    LOOP AT it_fields_header INTO ls_field_header.
+
+      IF ls_field_header-f_label IS NOT INITIAL.
+        lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = ls_field_header-f_label ).
+      ENDIF.
+      lv_col_num += 1.
+    ENDLOOP.
+
+    IF it_asset_data IS NOT INITIAL.
+      ASSIGN it_asset_data[ 1 ] TO FIELD-SYMBOL(<ls_asset_data>).
+      DATA lv_comp_count TYPE i.
+
+
+      LOOP AT <ls_asset_data>-mass_create_data ASSIGNING FIELD-SYMBOL(<ls_create_data>).
+        lv_col_num = 1.
+        CLEAR lv_comp_count.
+        DO.
+          ADD 1 TO lv_comp_count.
+          ASSIGN COMPONENT lv_comp_count OF STRUCTURE <ls_create_data> TO FIELD-SYMBOL(<fs_comp>).
+          IF sy-subrc NE 0.
+            EXIT.
+          ENDIF.
+          lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = <fs_comp> ).
+          lv_col_num += 1.
+        ENDDO.
+
+        lv_row_num += 1.
+
+      ENDLOOP.
+
+    ENDIF.
+
+
+    lo_doc->add_new_sheet( iv_sheet_name = 'Field_List'  ).
+*CATCH cx_openxml_format.
+*CATCH cx_openxml_not_allowed.
+*CATCH cx_dynamic_check.
+    lo_sheet_2 = lo_doc->get_sheet_by_id( 2 ).
+
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 1 iv_value = 'TagID_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 2 iv_value = 'AmountDate_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 3 iv_value = 'AmountTime_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 4 iv_value = 'AmountValue_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 5 iv_value = 'AmountUnit_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 6 iv_value = 'FaultInd_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 7 iv_value = 'CalibrationInd_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 8 iv_value = 'OutOfPrecisenessOperator_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 9 iv_value = 'NotAvailableInd_2' ).
+    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 10 iv_value = 'Remark_2' ).
+
+    lo_doc->add_new_sheet( iv_sheet_name = 'Introduction'  ).
+*CATCH cx_openxml_format.
+*CATCH cx_openxml_not_allowed.
+*CATCH cx_dynamic_check.
+    lo_sheet_3 = lo_doc->get_sheet_by_id( 3 ).
+
+    "longtext
+    DATA: lv_id          TYPE doku_id VALUE 'TX',
+          lv_object      TYPE doku_obj VALUE 'ZMPA_DOCU_TEST',
+          lv_langu       TYPE syst_langu,
+          lt_line        TYPE TABLE OF tline,
+          lt_new_comment TYPE string_table.
+
+    lv_langu =  sy-langu.
+
+    CALL FUNCTION 'DOCU_GET'
+      EXPORTING
+        id       = lv_id
+        langu    = lv_langu
+        object   = lv_object
+      TABLES
+        line     = lt_line
+      EXCEPTIONS
+        ret_code = 01
+        OTHERS   = 99.
+
+    CALL FUNCTION 'CONVERT_ITF_TO_STREAM_TEXT'
+      EXPORTING
+        lf           = 'X'
+      IMPORTING
+        stream_lines = lt_comment
+      TABLES
+        itf_text     = lt_line.
+
+    lv_col_num = 1.
+    lv_row_num = 1.
+    "Create the label row for the template
+    LOOP AT lt_comment ASSIGNING FIELD-SYMBOL(<ls_comment>).
+
+      lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = <ls_comment> ).
+      lv_col_num += 1.
+      lv_row_num += 1 .
+    ENDLOOP.
+
+    rv_excel_file = lo_doc->save( ).
+
+  ENDMETHOD.
+
+
 
 
   METHOD generate_csv_template.
@@ -1017,70 +1182,72 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ). "lo_wordsheetparts->get_part( 0 ).
     lo_sheet_content = lo_wordsheetpart->get_data( ).
 
+
+
     CREATE OBJECT lo_xml_document.
     lo_xml_document->parse_xstring( lo_sheet_content ).
-
-    " remove frozen setting
-    lo_node = lo_xml_document->find_node( name = 'selection' ).
-    lo_attrs_map = lo_node->get_attributes( ).
-    lo_attrs_map->remove_named_item( name = 'pane' ).
-    lo_node = lo_node->get_prev( ).
-    IF lo_node IS NOT INITIAL.
-      lo_node->remove_node( ).
-    ENDIF.
+*
+*    " remove frozen setting
+*    lo_node = lo_xml_document->find_node( name = 'selection' ).
+*    lo_attrs_map = lo_node->get_attributes( ).
+*    lo_attrs_map->remove_named_item( name = 'pane' ).
+*    lo_node = lo_node->get_prev( ).
+*    IF lo_node IS NOT INITIAL.
+*      lo_node->remove_node( ).
+*    ENDIF.
 
     " adjustment column width: fix the first cell width
-    lo_node           = lo_xml_document->find_node( name = 'cols' ).
-    lo_node_first_col = lo_node->get_first_child( ).
-    lo_attrs_map      = lo_node_first_col->get_attributes( ).
-    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column A
-
-    IF it_fields_header IS NOT INITIAL.
-
-      IF it_fields_header[ 1 ]-data_type = lc_data_type_char.
-        "adjust column style for the first column
-        lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
-        lo_node_attr->set_name( 'style' ).
-        lo_node_attr->set_value( lv_style_text ).
-        lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
-      ENDIF.
-
-      lv_col_index = 2.
-
-      "adjust column style based on the type of data (from column 2)
-      lo_node_first_col = lo_node_first_col->get_next( ).
-      WHILE lo_node_first_col IS BOUND.
-*        lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column "longtext
-
-        IF it_fields_header[ lv_col_index ]-data_type = lc_data_type_char OR it_fields_header[ lv_col_index ]-data_type = lc_data_type_dats.
-
-          APPEND VALUE #( type = lc_data_type_char column = lv_col_index ) TO lt_column_type_index.
-
-          lo_attrs_map = lo_node_first_col->get_attributes( ).
-          lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
-          lo_node_attr->set_name( 'style' ).
-          lo_node_attr->set_value( lv_style_text ).
-          lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
-
-*        ELSEIF it_fields_header[ lv_col_index ]-data_type = lc_data_type_dats.
+*    lo_node           = lo_xml_document->find_node( name = 'cols' ).
+*    lo_node_first_col = lo_node->get_first_child( ).
+*    lo_attrs_map      = lo_node_first_col->get_attributes( ).
+*    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column A
 *
-*          APPEND VALUE #( type = lc_data_type_dats column = lv_col_index )  TO lt_column_type_index.
+*    IF it_fields_header IS NOT INITIAL.
+*
+*      IF it_fields_header[ 1 ]-data_type = lc_data_type_char.
+*        "adjust column style for the first column
+*        lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
+*        lo_node_attr->set_name( 'style' ).
+*        lo_node_attr->set_value( lv_style_text ).
+*        lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+*      ENDIF.
+*
+*      lv_col_index = 2.
+*
+*      "adjust column style based on the type of data (from column 2)
+*      lo_node_first_col = lo_node_first_col->get_next( ).
+*      WHILE lo_node_first_col IS BOUND.
+**        lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column "longtext
+*
+*        IF it_fields_header[ lv_col_index ]-data_type = lc_data_type_char OR it_fields_header[ lv_col_index ]-data_type = lc_data_type_dats.
+*
+*          APPEND VALUE #( type = lc_data_type_char column = lv_col_index ) TO lt_column_type_index.
 *
 *          lo_attrs_map = lo_node_first_col->get_attributes( ).
 *          lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
 *          lo_node_attr->set_name( 'style' ).
-*          lo_node_attr->set_value( lv_style_date ).
+*          lo_node_attr->set_value( lv_style_text ).
 *          lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
-
-        ELSE.
-          APPEND VALUE #( type = lc_data_type_curr column = lv_col_index )  TO lt_column_type_index.
-        ENDIF.
-
-        lo_node_first_col = lo_node_first_col->get_next( ).
-        lv_col_index += 1.
-
-      ENDWHILE.
-    ENDIF.
+*
+**        ELSEIF it_fields_header[ lv_col_index ]-data_type = lc_data_type_dats.
+**
+**          APPEND VALUE #( type = lc_data_type_dats column = lv_col_index )  TO lt_column_type_index.
+**
+**          lo_attrs_map = lo_node_first_col->get_attributes( ).
+**          lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
+**          lo_node_attr->set_name( 'style' ).
+**          lo_node_attr->set_value( lv_style_date ).
+**          lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+*
+*        ELSE.
+*          APPEND VALUE #( type = lc_data_type_curr column = lv_col_index )  TO lt_column_type_index.
+*        ENDIF.
+*
+*        lo_node_first_col = lo_node_first_col->get_next( ).
+*        lv_col_index += 1.
+*
+*      ENDWHILE.
+*    ENDIF.
 
     " row index start from 0, if input nothing, the row will be ignored from index
     lo_node      = lo_xml_document->find_node( name = 'sheetData' ).
@@ -1117,66 +1284,66 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 
     "*============================ Format excel with Data =============================**
 
-    "set style and type for rows with data, for downloaded file
-    DATA(lo_node_iterator) = lo_node_rows->create_iterator( ).
-    "get the row with data - from row 6 in excel, while downloading the file
-
-    DO 5 TIMES.
-      lo_node = lo_node_iterator->get_next( ).
-    ENDDO.
-
-    lo_node_col_per_row = lo_node->get_children( ).
-
-    LOOP AT lt_column_type_index REFERENCE INTO DATA(lr_column_ind).
-
-      lo_col_node = lo_node_col_per_row->get_item( index = lr_column_ind->column - 1 ).
-      CHECK lo_col_node IS NOT INITIAL.
-
-      lo_attrs_map = lo_col_node->get_attributes( ).
-      lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' ).
-
-      lo_attribute ?= lo_node_attr->query_interface( ixml_iid_attribute ).
-      DATA(lv_cell_index) = lo_attribute->get_value( ).
-
-      DATA(lv_length) = strlen( lv_cell_index ) - 1 .
-
-      IF lr_column_ind->type = lc_data_type_char OR lr_column_ind->type = lc_data_type_dats.
-        APPEND VALUE #( name = lv_cell_index(lv_length) ) TO lt_char_col.
-*      ELSEIF lr_column_ind->type = lc_data_type_dats.
-*        APPEND VALUE #( name = lv_cell_index(lv_length) ) TO lt_date_col.
-      ENDIF.
-
-    ENDLOOP.
-
-    DATA lv_row_num TYPE i VALUE 0.
-
-    "Process from row 6: data is filled from row 6 onwards
-    lo_node = lo_node_iterator->get_next( ).
-
-    WHILE lo_node IS NOT INITIAL.
-
-      "1st time would be row 6 then incrimented with one each time ...
-      "column is alphabet b
-      lo_node_col_per_row = lo_node->get_children( ).
-      DATA(lo_node_itr)   = lo_node_col_per_row->create_iterator( ).
-      lo_col_node         = lo_node_itr->get_next( ).
-
-      WHILE lo_col_node IS NOT INITIAL.
-
-        format_cell_for_download_file( is_block = is_block
-                                       it_char_col = lt_char_col
-                                       it_date_col = lt_date_col
-                                       io_col_node = lo_col_node
-                                       iv_style_text = lv_style_text
-                                       iv_style_date = lv_style_date
-                                       iv_row_num = lv_row_num ).
-
-        lo_col_node = lo_node_itr->get_next( ).
-
-      ENDWHILE.
-      lo_node = lo_node_iterator->get_next( ).
-      lv_row_num += 1.
-    ENDWHILE.
+*    "set style and type for rows with data, for downloaded file
+*    DATA(lo_node_iterator) = lo_node_rows->create_iterator( ).
+*    "get the row with data - from row 6 in excel, while downloading the file
+*
+*    DO 5 TIMES.
+*      lo_node = lo_node_iterator->get_next( ).
+*    ENDDO.
+*
+*    lo_node_col_per_row = lo_node->get_children( ).
+*
+*    LOOP AT lt_column_type_index REFERENCE INTO DATA(lr_column_ind).
+*
+*      lo_col_node = lo_node_col_per_row->get_item( index = lr_column_ind->column - 1 ).
+*      CHECK lo_col_node IS NOT INITIAL.
+*
+*      lo_attrs_map = lo_col_node->get_attributes( ).
+*      lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' ).
+*
+*      lo_attribute ?= lo_node_attr->query_interface( ixml_iid_attribute ).
+*      DATA(lv_cell_index) = lo_attribute->get_value( ).
+*
+*      DATA(lv_length) = strlen( lv_cell_index ) - 1 .
+*
+*      IF lr_column_ind->type = lc_data_type_char OR lr_column_ind->type = lc_data_type_dats.
+*        APPEND VALUE #( name = lv_cell_index(lv_length) ) TO lt_char_col.
+**      ELSEIF lr_column_ind->type = lc_data_type_dats.
+**        APPEND VALUE #( name = lv_cell_index(lv_length) ) TO lt_date_col.
+*      ENDIF.
+*
+*    ENDLOOP.
+*
+*    DATA lv_row_num TYPE i VALUE 0.
+*
+*    "Process from row 6: data is filled from row 6 onwards
+*    lo_node = lo_node_iterator->get_next( ).
+*
+*    WHILE lo_node IS NOT INITIAL.
+*
+*      "1st time would be row 6 then incrimented with one each time ...
+*      "column is alphabet b
+*      lo_node_col_per_row = lo_node->get_children( ).
+*      DATA(lo_node_itr)   = lo_node_col_per_row->create_iterator( ).
+*      lo_col_node         = lo_node_itr->get_next( ).
+*
+*      WHILE lo_col_node IS NOT INITIAL.
+*
+*        format_cell_for_download_file( is_block = is_block
+*                                       it_char_col = lt_char_col
+*                                       it_date_col = lt_date_col
+*                                       io_col_node = lo_col_node
+*                                       iv_style_text = lv_style_text
+*                                       iv_style_date = lv_style_date
+*                                       iv_row_num = lv_row_num ).
+*
+*        lo_col_node = lo_node_itr->get_next( ).
+*
+*      ENDWHILE.
+*      lo_node = lo_node_iterator->get_next( ).
+*      lv_row_num += 1.
+*    ENDWHILE.
 
     "*======================= End of Format excel with Data ===============**
 
@@ -1194,40 +1361,40 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 *    lo_new_worksheet->feed_data( iv_data = lo_sheet_content ).
 
 **********************************************************************
-    DATA: lo_worksheet_part TYPE REF TO cl_xlsx_worksheetpart.
-    "Create a new Worksheet part
-    lo_worksheet_part = lo_workbookpart->add_worksheetpart( ).
-
-    "Create Sheet info for the new Sheet
-    DATA(ls_sheet_info) = zcreate_info_for_new_sheet( iv_sheet_name     = 'Sheet_2'
-                                                      io_worksheet_part = lo_worksheet_part
-                                                      io_workbookpart = lo_workbookpart ).
-
-
-*   update the Workbook XML
-*    zupdate_wb_xml_after_add_sheet( io_workbookpart = lo_workbookpart
-*                                    is_sheet_info = ls_sheet_info ).
-
-    DATA lv_workbook_xml  TYPE xstring.
-    lv_workbook_xml =  lo_workbookpart->get_data( ).
-
-    CALL TRANSFORMATION xl_mpa_insert_sheet
-             PARAMETERS active_sheet = 1
-                        sheet_name   = ls_sheet_info-name
-                        sheet_id     = ls_sheet_info-sheet_id
-                        sheet_rid    = ls_sheet_info-rid
-             SOURCE XML lv_workbook_xml
-             RESULT XML lv_workbook_xml.
-
-
-    lo_uri           = cl_openxml_parturi=>create_from_filename( iv_filename = '/xl/worksheets/sheet2.xml' ).
-    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ). "lo_wordsheetparts->get_part( 0 ).
-    lo_sheet_content = lo_wordsheetpart->get_data( ).
-
-
-
-    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
-    lo_wordsheetpart->feed_data( lo_formarted ).
+*    DATA: lo_worksheet_part TYPE REF TO cl_xlsx_worksheetpart.
+*    "Create a new Worksheet part
+*    lo_worksheet_part = lo_workbookpart->add_worksheetpart( ).
+*
+*    "Create Sheet info for the new Sheet
+*    DATA(ls_sheet_info) = zcreate_info_for_new_sheet( iv_sheet_name     = 'Sheet_2'
+*                                                      io_worksheet_part = lo_worksheet_part
+*                                                      io_workbookpart = lo_workbookpart ).
+*
+*
+**   update the Workbook XML
+**    zupdate_wb_xml_after_add_sheet( io_workbookpart = lo_workbookpart
+**                                    is_sheet_info = ls_sheet_info ).
+*
+*    DATA lv_workbook_xml  TYPE xstring.
+*    lv_workbook_xml =  lo_workbookpart->get_data( ).
+*
+*    CALL TRANSFORMATION xl_mpa_insert_sheet
+*             PARAMETERS active_sheet = 1
+*                        sheet_name   = ls_sheet_info-name
+*                        sheet_id     = ls_sheet_info-sheet_id
+*                        sheet_rid    = ls_sheet_info-rid
+*             SOURCE XML lv_workbook_xml
+*             RESULT XML lv_workbook_xml.
+*
+*
+*    lo_uri           = cl_openxml_parturi=>create_from_filename( iv_filename = '/xl/worksheets/sheet2.xml' ).
+*    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ). "lo_wordsheetparts->get_part( 0 ).
+*    lo_sheet_content = lo_wordsheetpart->get_data( ).
+*
+*
+*
+*    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
+*    lo_wordsheetpart->feed_data( lo_formarted ).
 
 
 **********************************************************************
@@ -1237,9 +1404,9 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     " 3. Add cell style for date fields
     " 4. Format other remaining cells
     "*----------------------------------------------------------------------*"
-
-    lo_stylepart = set_stylesxml( io_xlsx_doc = lo_xlsx_doc
-                                  io_xml_document = lo_xml_document ).
+*
+*    lo_stylepart = set_stylesxml( io_xlsx_doc = lo_xlsx_doc
+*                                  io_xml_document = lo_xml_document ).
 
 
 ** Temp code
@@ -1269,28 +1436,28 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     "sheet
 **********************************************************************
     "get workbook
-  lo_doc_parts = lo_xlsx_doc->get_parts( ).
-    lo_uri       = cl_openxml_parturi=>create_from_filename( iv_filename = 'xl/workbook.xml' ).
-    lo_stylepart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ).
-    lo_xml_document->parse_xstring( lo_stylepart->get_data( ) ).
-
-    lo_node      = lo_xml_document->find_node( name = 'sheets').
-
-    lo_node_first_font    = lo_node->get_first_child( )->clone( )."sheet
-*    lo_node_first_element = lo_node_first_font->get_first_child( ).
-    lo_attrs_map          = lo_node_first_font->get_attributes( ).
-*     lo_attrs_map->get_named_item_ns( name = 'sheet' ).
-    lo_attrs_map->get_named_item_ns( name = 'id' )->set_value( 'rId4' ).
-    lo_attrs_map->get_named_item_ns( name = 'sheetId' )->set_value( '2' ).
-    lo_attrs_map->get_named_item_ns( name = 'name' )->set_value( 'Intro' ).
-    lo_node->append_child( lo_node_first_font ).
+*  lo_doc_parts = lo_xlsx_doc->get_parts( ).
+*    lo_uri       = cl_openxml_parturi=>create_from_filename( iv_filename = 'xl/workbook.xml' ).
+*    lo_stylepart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ).
+*    lo_xml_document->parse_xstring( lo_stylepart->get_data( ) ).
+*
+*    lo_node      = lo_xml_document->find_node( name = 'sheets').
+*
+*    lo_node_first_font    = lo_node->get_first_child( )->clone( )."sheet
+**    lo_node_first_element = lo_node_first_font->get_first_child( ).
+*    lo_attrs_map          = lo_node_first_font->get_attributes( ).
+**     lo_attrs_map->get_named_item_ns( name = 'sheet' ).
+*    lo_attrs_map->get_named_item_ns( name = 'id' )->set_value( 'rId4' ).
+*    lo_attrs_map->get_named_item_ns( name = 'sheetId' )->set_value( '2' ).
+*    lo_attrs_map->get_named_item_ns( name = 'name' )->set_value( 'Intro' ).
+*    lo_node->append_child( lo_node_first_font ).
 
 **********************************************************************
 
 
 
-    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
-    lo_stylepart->feed_data( lo_formarted ).
+*    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
+*    lo_stylepart->feed_data( lo_formarted ).
 
     ev_target_doc = lo_xlsx_doc->get_package_data( ).
 
@@ -1880,6 +2047,8 @@ CLASS zcl_template_download_util IMPLEMENTATION.
                                             IMPORTING
                                               es_block = DATA(ls_block) ).
 
+                DATA(lt_asset_data) = get_asset_data( EXPORTING ix_file = ls_uploaded_file-file_data ).
+
                 "Get required field name and translated label
                 get_trans_mapping(
                   EXPORTING
@@ -1892,7 +2061,7 @@ CLASS zcl_template_download_util IMPLEMENTATION.
                   "Generate the excel template with data
                   generate_excel_template( EXPORTING
                                              it_field_mapping = lt_field_mapping
-                                             is_block         = ls_block
+                                             it_asset_data         = lt_asset_data
                                              iv_file_download_ind = abap_true
                                            IMPORTING
                                              er_stream        = er_stream
@@ -2496,6 +2665,19 @@ CLASS zcl_template_download_util IMPLEMENTATION.
                         sheet_rid    = is_sheet_info-rid
              SOURCE XML lv_workbook_xml
              RESULT XML lv_workbook_xml.
+
+  ENDMETHOD.
+
+
+  METHOD get_asset_data.
+
+    DATA lo_xlsx_parse_util TYPE REF TO zcl_xlsx_parse_util.
+    lo_xlsx_parse_util = CAST #( zcl_xlsx_parse_util=>get_instance( ) ).
+
+    lo_xlsx_parse_util->parse_xlsx( EXPORTING  ix_file     = ix_file
+                                    IMPORTING ev_mpa_type = DATA(lv_mpa_file_type)
+                                              et_asset    = r_result
+                                              et_message  = DATA(et_message) ).
 
   ENDMETHOD.
 

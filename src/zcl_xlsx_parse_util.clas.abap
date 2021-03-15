@@ -42,6 +42,18 @@ CLASS zcl_xlsx_parse_util DEFINITION
       RETURNING
         VALUE(ro_instance) TYPE REF TO if_mpa_xlsx_parse_util .
 
+    "! Parse the uploaded excel file
+    METHODS parse_xlsx
+      IMPORTING
+        !ix_file     TYPE xstring
+      EXPORTING
+        !ev_mpa_type TYPE mpa_template_type
+        !et_asset    TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data
+        !et_message  TYPE bapirettab
+      RAISING
+        cx_openxml_not_found
+        cx_openxml_format .
+
   PROTECTED SECTION.
 
   PRIVATE SECTION.
@@ -87,17 +99,7 @@ CLASS zcl_xlsx_parse_util DEFINITION
     "! Object for interface if_mpa_xlsx_parse_util
     CLASS-DATA go_instance TYPE REF TO if_mpa_xlsx_parse_util .
 
-    "! Parse the uploaded excel file
-    METHODS parse_xlsx
-      IMPORTING
-        !ix_file     TYPE xstring
-      EXPORTING
-        !ev_mpa_type TYPE mpa_template_type
-        !et_asset    TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data
-        !et_message  TYPE bapirettab
-      RAISING
-        cx_openxml_not_found
-        cx_openxml_format .
+
     "! Save the uploaded excel file data to the DB
     METHODS save_file_to_db
       IMPORTING
@@ -536,6 +538,8 @@ CLASS zcl_xlsx_parse_util IMPLEMENTATION.
         " Read Excel Data based on index table"
         READ TABLE mt_line_index ASSIGNING FIELD-SYMBOL(<fs_line_index>) INDEX 1.
         IF sy-subrc IS INITIAL.
+
+*data(ls_line_index) = value mpa_s_excel_doc_index(  ).
 
           " Map file data to internal table "
           me->map_excel_data(
