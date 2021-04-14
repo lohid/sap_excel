@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Helper class for Spreadsheet generation</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+    <WITH_UNIT_TESTS>X</WITH_UNIT_TESTS>
+   </VSEOCLASS>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+     <CMPNAME>CONVERT_DATE_TO_XLSX_DATE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Converts a date into XLSX format</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+     <CMPNAME>CONVERT_TIMESTAMP_TO_XLSX</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Converts a timestamp into XLSX format</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+     <CMPNAME>CONVERT_TIME_TO_XLSX_TIME</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Converts a time into XLSX format</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+     <CMPNAME>GET_CELL_POSITION</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Calculates the cell position in Excel notation</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_HELPER</CLSNAME>
+     <CMPNAME>MT_COLUMN_POS_CACHE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Table of column positions as strings in Excel like form</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>

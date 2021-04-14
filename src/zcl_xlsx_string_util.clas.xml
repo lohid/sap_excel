@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Helps organizing strings of an XLSX file</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+   </VSEOCLASS>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>GET_INDEX_OF_STRING</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Returns index of string, adds string if not yet available</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>GET_STRING_AT_INDEX</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Gets the String for a given index</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>HAS_STRINGS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Checks if the Util manages at least one string</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>INIT_FROM_XML</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Initializes internal string tables from XML</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>MTH_STRING_INDEX</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Lookup table for strings and their indexes</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>MT_STRINGS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Table of strings</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_XLSX_STRING_UTIL</CLSNAME>
+     <CMPNAME>TO_XML</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Exports the Strings to the XML again</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>

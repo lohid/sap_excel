@@ -289,6 +289,16 @@ CLASS zcl_template_download_util DEFINITION
         ix_file         TYPE xstring
       RETURNING
         VALUE(r_result) TYPE cl_mpa_asset_process_dpc_ext=>ty_t_file_data.
+    METHODS set_intoduction_sheet
+      IMPORTING
+        io_sheet_3  TYPE REF TO zif_mpa_xlsx_sheet
+        iv_scenario TYPE char2
+      CHANGING
+        ct_comment  TYPE string_table.
+    METHODS set_field_list_sheet
+      IMPORTING
+        io_sheet_2       TYPE REF TO zif_mpa_xlsx_sheet
+        it_fields_header TYPE gty_t_field_name_mappings  .
 ENDCLASS.
 
 
@@ -724,10 +734,13 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 
     lo_tool_xls->read_result( IMPORTING content = lv_content  ).
 
-*    add_worksheet( CHANGING cv_doc = lv_content ).
 
-    DATA(lv_excel_xstring) = create_excel_with_sheets( it_fields_header = it_field_mapping
-                                                       it_asset_data = it_asset_data ).
+    TRY.
+        DATA(lv_excel_xstring) = create_excel_with_sheets( it_fields_header = it_field_mapping
+                                                           it_asset_data = it_asset_data ).
+      CATCH cx_dynamic_check cx_openxml_not_allowed.
+        "handle exception
+    ENDTRY.
 
     " Format excel (hide structure fields, delete freeze line, add font)
     format_doc( EXPORTING
@@ -797,27 +810,20 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     LOOP AT it_fields_header INTO DATA(ls_field_header).
 
       IF ls_field_header-stru_name IS NOT INITIAL.
-        lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = ls_field_header-stru_name ).
+        lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = ls_field_header-position iv_value = ls_field_header-stru_name ).
       ENDIF.
-      lv_col_num += 1.
-    ENDLOOP.
-
-
-    lv_col_num = 1.
-    lv_row_num += 1.
-    "Create the label row for the template
-    LOOP AT it_fields_header INTO ls_field_header.
-
       IF ls_field_header-f_label IS NOT INITIAL.
-        lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = ls_field_header-f_label ).
+        lo_sheet->set_cell_content( iv_row = lv_row_num + 1 iv_column = ls_field_header-position iv_value = ls_field_header-f_label ).
       ENDIF.
-      lv_col_num += 1.
+
     ENDLOOP.
+
 
     IF it_asset_data IS NOT INITIAL.
       ASSIGN it_asset_data[ 1 ] TO FIELD-SYMBOL(<ls_asset_data>).
       DATA lv_comp_count TYPE i.
 
+      lv_row_num += 2.
 
       LOOP AT <ls_asset_data>-mass_create_data ASSIGNING FIELD-SYMBOL(<ls_create_data>).
         lv_col_num = 1.
@@ -839,70 +845,178 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     ENDIF.
 
 
-    lo_doc->add_new_sheet( iv_sheet_name = 'Field_List'  ).
-*CATCH cx_openxml_format.
-*CATCH cx_openxml_not_allowed.
-*CATCH cx_dynamic_check.
+    lo_doc->add_new_sheet( iv_sheet_name = 'Field List'  ).
     lo_sheet_2 = lo_doc->get_sheet_by_id( 2 ).
 
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 1 iv_value = 'TagID_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 2 iv_value = 'AmountDate_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 3 iv_value = 'AmountTime_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 4 iv_value = 'AmountValue_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 5 iv_value = 'AmountUnit_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 6 iv_value = 'FaultInd_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 7 iv_value = 'CalibrationInd_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 8 iv_value = 'OutOfPrecisenessOperator_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 9 iv_value = 'NotAvailableInd_2' ).
-    lo_sheet_2->set_cell_content( iv_row = 1 iv_column = 10 iv_value = 'Remark_2' ).
+    set_field_list_sheet( EXPORTING io_sheet_2 = lo_sheet_2
+                                    it_fields_header = it_fields_header ).
 
     lo_doc->add_new_sheet( iv_sheet_name = 'Introduction'  ).
-*CATCH cx_openxml_format.
-*CATCH cx_openxml_not_allowed.
-*CATCH cx_dynamic_check.
     lo_sheet_3 = lo_doc->get_sheet_by_id( 3 ).
 
     "longtext
-    DATA: lv_id          TYPE doku_id VALUE 'TX',
-          lv_object      TYPE doku_obj VALUE 'ZMPA_DOCU_TEST',
-          lv_langu       TYPE syst_langu,
-          lt_line        TYPE TABLE OF tline,
-          lt_new_comment TYPE string_table.
+    set_intoduction_sheet( EXPORTING io_sheet_3 = lo_sheet_3
+                                     iv_scenario = gv_template_type
+                           CHANGING ct_comment = lt_comment ).
 
-    lv_langu =  sy-langu.
+    rv_excel_file = lo_doc->save( ).
+
+  ENDMETHOD.
+
+  METHOD set_field_list_sheet.
+
+    DATA lv_row_num TYPE i VALUE 3.
+    DATA lv_col_num TYPE i VALUE 1.
+
+    io_sheet_2->set_cell_content( iv_row = 1 iv_column = 1 iv_value = 'FIELD NAME' ).
+    io_sheet_2->set_cell_content( iv_row = 1 iv_column = 2 iv_value = 'DESCRIPTION' ).
+    io_sheet_2->set_cell_content( iv_row = 1 iv_column = 3 iv_value = 'IMPORTANCE' ).
+    io_sheet_2->set_cell_content( iv_row = 1 iv_column = 4 iv_value = 'TYPE' ).
+    io_sheet_2->set_cell_content( iv_row = 1 iv_column = 5 iv_value = 'LENGTH' ).
+
+
+    " Create the technical field row for the template
+    LOOP AT it_fields_header INTO DATA(ls_field_header).
+
+      IF ls_field_header-stru_name IS NOT INITIAL.
+        io_sheet_2->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = ls_field_header-stru_name ).
+      ENDIF.
+      lv_col_num += 1.
+
+      IF ls_field_header-label IS NOT INITIAL.
+        io_sheet_2->set_cell_content( iv_row = lv_row_num  iv_column = lv_col_num iv_value = ls_field_header-label ).
+      ENDIF.
+      lv_col_num += 1.
+
+      IF ls_field_header-mandatory IS NOT INITIAL.
+        io_sheet_2->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num
+                                      iv_value = COND #( WHEN ls_field_header-mandatory = abap_true
+                                                         THEN 'Mandatory for sheet' ) ).
+      ENDIF.
+      lv_col_num += 1.
+
+      IF ls_field_header-data_type IS NOT INITIAL.
+        io_sheet_2->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num
+                                  iv_value = COND char6( WHEN ls_field_header-data_type = 'CHAR'
+                                                           OR ls_field_header-data_type = 'CUKY'
+                                                           OR ls_field_header-data_type = 'UNIT'
+                                                         THEN 'text'
+                                                         WHEN ls_field_header-data_type = 'DATS'
+                                                         THEN 'date'
+                                                         WHEN ls_field_header-data_type = 'NUMC'
+                                                           OR ls_field_header-data_type = 'DEC'
+                                                           OR ls_field_header-data_type = 'INT4'
+                                                         THEN 'number'
+                                                         ELSE 'text' ) ).
+      ENDIF.
+      lv_col_num += 1.
+
+      IF ls_field_header-length IS NOT INITIAL.
+        io_sheet_2->set_cell_content( iv_row = lv_row_num  iv_column = lv_col_num iv_value = |{ ls_field_header-length ALPHA = OUT  }| ).
+      ENDIF.
+
+      lv_col_num = 1.
+      lv_row_num += 1.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+
+  METHOD set_intoduction_sheet.
+
+    DATA lv_row_num TYPE i VALUE 2.
+    DATA lv_col_num TYPE i VALUE 1.
+
+    DATA: lv_id                    TYPE doku_id VALUE 'TX',
+          lv_object_general_intro  TYPE doku_obj VALUE 'MPA_EXCEL_TEMPL_INTRO',
+          lv_object_scenario_intro TYPE doku_obj,
+          lt_line_intro            TYPE TABLE OF tline,
+          lt_line_scenario_intro   TYPE TABLE OF tline,
+          lt_new_comment           TYPE string_table.
+
+    "set document object name based on scenario
+
+    lv_object_scenario_intro = |MPA_EXCEL_TEMPL_INTRO_{ iv_scenario }|.
 
     CALL FUNCTION 'DOCU_GET'
       EXPORTING
         id       = lv_id
-        langu    = lv_langu
-        object   = lv_object
+        langu    = sy-langu
+        object   = lv_object_general_intro
       TABLES
-        line     = lt_line
+        line     = lt_line_intro
       EXCEPTIONS
         ret_code = 01
         OTHERS   = 99.
+
+    CALL FUNCTION 'DOCU_GET'
+      EXPORTING
+        id       = lv_id
+        langu    = sy-langu
+        object   = lv_object_scenario_intro
+      TABLES
+        line     = lt_line_scenario_intro
+      EXCEPTIONS
+        ret_code = 01
+        OTHERS   = 99.
+
+    APPEND LINES OF lt_line_scenario_intro TO lt_line_intro.
+
+
+* sometimes, for non-English languages without translation of instruction doc,
+* using English doc to ensure the integrity of XML file
+    IF lt_line_intro IS INITIAL.
+
+      CALL FUNCTION 'DOCU_GET'
+        EXPORTING
+          id       = lv_id
+          langu    = 'E'
+          object   = lv_object_general_intro
+        TABLES
+          line     = lt_line_intro
+        EXCEPTIONS
+          ret_code = 01
+          OTHERS   = 99.
+
+      CALL FUNCTION 'DOCU_GET'
+        EXPORTING
+          id       = lv_id
+          langu    = 'E'
+          object   = lv_object_general_intro
+        TABLES
+          line     = lt_line_scenario_intro
+        EXCEPTIONS
+          ret_code = 01
+          OTHERS   = 99.
+
+      APPEND LINES OF lt_line_scenario_intro TO lt_line_intro.
+
+    ENDIF.
+
 
     CALL FUNCTION 'CONVERT_ITF_TO_STREAM_TEXT'
       EXPORTING
         lf           = 'X'
       IMPORTING
-        stream_lines = lt_comment
+        stream_lines = ct_comment
       TABLES
-        itf_text     = lt_line.
+        itf_text     = lt_line_intro.
 
     lv_col_num = 1.
     lv_row_num = 1.
     "Create the label row for the template
-    LOOP AT lt_comment ASSIGNING FIELD-SYMBOL(<ls_comment>).
+    LOOP AT ct_comment ASSIGNING FIELD-SYMBOL(<ls_comment>).
 
-      lo_sheet->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = <ls_comment> ).
-      lv_col_num += 1.
+      io_sheet_3->set_cell_content( iv_row = lv_row_num iv_column = lv_col_num iv_value = <ls_comment> ).
+*      lv_col_num += 1.
       lv_row_num += 1 .
     ENDLOOP.
 
-    rv_excel_file = lo_doc->save( ).
-
   ENDMETHOD.
+
+
 
 
 
@@ -1179,14 +1293,64 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 **********************************************************************
 
     lo_uri           = cl_openxml_parturi=>create_from_filename( iv_filename = '/xl/worksheets/sheet1.xml' ).
-    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ). "lo_wordsheetparts->get_part( 0 ).
+    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ).
+*    data(lo_part) = lo_wordsheetparts->get_part( 0 ).
     lo_sheet_content = lo_wordsheetpart->get_data( ).
-
 
 
     CREATE OBJECT lo_xml_document.
     lo_xml_document->parse_xstring( lo_sheet_content ).
+
+
+**********************************************************************
+    DATA lt_data  TYPE STANDARD TABLE OF char255.
+    lo_xml_document->render_2_table(
+*  EXPORTING
+*    pretty_print = 'X'
+      IMPORTING
+*    retcode      =
+        table        = lt_data
+*    size         =
+    ).
+
+    DATA(is_initial) = lo_xml_document->is_initial( ).
+
+
+*    " row index start from 0, if input nothing, the row will be ignored from index
+*    lo_node      = lo_xml_document->find_node( name = 'sheetData' ).
+*    lo_node_rows = lo_node->get_children( ).
 *
+*    " set height of row
+*    " adjust the height of the first header
+*    lo_node      = lo_node_rows->get_item( 0 ).
+*    lo_attrs_map = lo_node->get_attributes( ).
+*
+*    " reference node 'r'
+*    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+*    lo_node_attr->set_name( 'ht' ).
+*    lo_node_attr->set_value( '25.5' )." adjust the height of 1st row
+*    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+*
+
+
+* lo_node      = lo_xml_document->find_node( name = 'sheetFormatPr' )->clone( ).
+* lo_node->set_name( name = 'cols' ).
+* lo_node->insert_child(
+*   EXPORTING
+*     new_child =
+*     ref_child =
+**   RECEIVING
+**     rval      =
+* ).
+* lo_node_first_col = lo_node->insert_child(
+*                       new_child = 'col'
+*                       ref_child =
+*                     )
+*lo_node_first_col = lo_node->get_first_child( ).
+
+**********************************************************************
+
+
 *    " remove frozen setting
 *    lo_node = lo_xml_document->find_node( name = 'selection' ).
 *    lo_attrs_map = lo_node->get_attributes( ).
@@ -1195,26 +1359,50 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 *    IF lo_node IS NOT INITIAL.
 *      lo_node->remove_node( ).
 *    ENDIF.
-
+*
     " adjustment column width: fix the first cell width
-*    lo_node           = lo_xml_document->find_node( name = 'cols' ).
-*    lo_node_first_col = lo_node->get_first_child( ).
-*    lo_attrs_map      = lo_node_first_col->get_attributes( ).
-*    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column A
-*
-*    IF it_fields_header IS NOT INITIAL.
-*
-*      IF it_fields_header[ 1 ]-data_type = lc_data_type_char.
-*        "adjust column style for the first column
-*        lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
-*        lo_node_attr->set_name( 'style' ).
-*        lo_node_attr->set_value( lv_style_text ).
-*        lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
-*      ENDIF.
-*
+    lo_node           = lo_xml_document->find_node( name = 'cols' ).
+    lo_node_first_col = lo_node->get_first_child( ).
+    lo_attrs_map      = lo_node_first_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column A
+
+*lo_node_first_col =
+
+    IF it_fields_header IS NOT INITIAL.
+
+      IF it_fields_header[ 1 ]-data_type = lc_data_type_char.
+        "adjust column style for the first column
+        lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'width' )->clone( ).
+        lo_node_attr->set_name( 'style' ).
+        lo_node_attr->set_value( lv_style_text ).
+        lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+      ENDIF.
+
 *      lv_col_index = 2.
-*
-*      "adjust column style based on the type of data (from column 2)
+
+      DATA : lo_node_add_col TYPE REF TO if_ixml_node,
+             lv_width        TYPE string.
+
+      LOOP AT it_fields_header INTO DATA(ls_field_header).
+
+        IF ls_field_header-position > 1.
+          lv_width = strlen( ls_field_header-f_label ).
+          CONDENSE lv_width NO-GAPS.
+
+          lo_node_add_col = lo_node_first_col->clone( ).
+          lo_attrs_map = lo_node_add_col->get_attributes( ).
+          lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = lv_width ).
+          lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = |{ ls_field_header-position  }| ).
+          lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = |{ ls_field_header-position }| ).
+
+          lo_node->append_child( new_child =  lo_node_add_col ).
+
+*        lv_col_index += 1.
+        ENDIF.
+      ENDLOOP.
+
+
+      "adjust column style based on the type of data (from column 2)
 *      lo_node_first_col = lo_node_first_col->get_next( ).
 *      WHILE lo_node_first_col IS BOUND.
 **        lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '20' ).  "length of column "longtext
@@ -1247,7 +1435,7 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 *        lv_col_index += 1.
 *
 *      ENDWHILE.
-*    ENDIF.
+    ENDIF.
 
     " row index start from 0, if input nothing, the row will be ignored from index
     lo_node      = lo_xml_document->find_node( name = 'sheetData' ).
@@ -1279,9 +1467,44 @@ CLASS zcl_template_download_util IMPLEMENTATION.
     " reference node 'r'
     lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
     lo_node_attr->set_name( 's' ).
-    lo_node_attr->set_value( lv_style_text ).
+    lo_node_attr->set_value( `2` ).
     lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
 
+
+
+*    DATA(lo_row_iterator) = lo_node_rows->create_iterator( ).
+*
+*    DATA(lo_row_node) = lo_row_iterator->( ).
+*    lo_node_rows = lo_row_node->get_children( ).
+
+    DATA(lo_fieldrow_node) = lo_node_rows->get_item( 3 ).
+
+    DATA(lo_row_node) = lo_fieldrow_node->get_children( ).
+
+    DATA lv_row_count TYPE i VALUE 0.
+    WHILE lo_row_node->get_item( index = lv_row_count ) IS NOT INITIAL.
+      lo_node = lo_row_node->get_item( index = lv_row_count ).
+      lo_attrs_map = lo_node->get_attributes( ).
+      lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+      lo_node_attr->set_name( 's' ).
+      lo_node_attr->set_value( `1` ).
+      lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+      lv_row_count += 1.
+    ENDWHILE.
+
+*    DATA(lo_row_iterator) = lo_row_node->create_iterator( ).
+*
+*    lo_node = lo_row_iterator->get_next( ).
+*
+*    WHILE lo_node IS NOT INITIAL.
+*      lo_node_attr = lo_node->get_first_child( )->clone( ).
+*      lo_node_attr->set_name( 's' ).
+*      lo_node_attr->set_value( `10` ).
+*      lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+*      CLEAR   lo_node.
+*      lo_node = lo_row_iterator->get_next( ).
+*    ENDWHILE.
     "*============================ Format excel with Data =============================**
 
 *    "set style and type for rows with data, for downloaded file
@@ -1347,7 +1570,177 @@ CLASS zcl_template_download_util IMPLEMENTATION.
 
     "*======================= End of Format excel with Data ===============**
 
+    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
+    lo_wordsheetpart->feed_data( lo_formarted ).
 
+*Lohid**********************************************************************
+
+
+    lo_uri           = cl_openxml_parturi=>create_from_filename( iv_filename = '/xl/worksheets/sheet3.xml' ).
+    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ).
+*    data(lo_part) = lo_wordsheetparts->get_part( 0 ).
+    lo_sheet_content = lo_wordsheetpart->get_data( ).
+
+
+    CREATE OBJECT lo_xml_document.
+    lo_xml_document->parse_xstring( lo_sheet_content ).
+
+
+    " adjustment column width: fix the first cell width
+    lo_node           = lo_xml_document->find_node( name = 'cols' ).
+    lo_node_first_col = lo_node->get_first_child( ).
+    lo_attrs_map      = lo_node_first_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '250' ).  "length of column A
+
+
+
+*    DATA lv_count TYPE i VALUE 1.
+
+*    WHILE lv_count < 100.
+
+*    lo_node_add_col = lo_node_first_col->clone( ).
+*    lo_attrs_map = lo_node_add_col->get_attributes( ).
+*    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `250` ).
+*    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `1` ).
+*    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `1` ).
+*
+*    lo_node->append_child( new_child =  lo_node_add_col ).
+
+*      lv_count += 1.
+*    ENDWHILE.
+
+    " row index start from 0, if input nothing, the row will be ignored from index
+    lo_node      = lo_xml_document->find_node( name = 'sheetData' ).
+    lo_node_rows = lo_node->get_children( ).
+
+    " set height of row
+    " adjust the height of the first header
+    lo_node      = lo_node_rows->get_item( 0 ).
+    lo_attrs_map = lo_node->get_attributes( ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'ht' ).
+    lo_node_attr->set_value( '25.5' )." adjust the height of 1st row
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'customHeight' ).
+    lo_node_attr->set_value( '1' ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'customFormat' ).
+    lo_node_attr->set_value( '1' ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 's' ).
+    lo_node_attr->set_value( lv_style_text ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+
+    lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
+    lo_wordsheetpart->feed_data( lo_formarted ).
+
+
+    lo_uri           = cl_openxml_parturi=>create_from_filename( iv_filename = '/xl/worksheets/sheet2.xml' ).
+    lo_wordsheetpart = lo_xlsx_doc->get_part_by_uri( ir_parturi = lo_uri ).
+*    data(lo_part) = lo_wordsheetparts->get_part( 0 ).
+    lo_sheet_content = lo_wordsheetpart->get_data( ).
+
+
+    CREATE OBJECT lo_xml_document.
+    lo_xml_document->parse_xstring( lo_sheet_content ).
+
+
+    " adjustment column width: fix the first cell width
+    lo_node           = lo_xml_document->find_node( name = 'cols' ).
+    lo_node_first_col = lo_node->get_first_child( ).
+    lo_attrs_map      = lo_node_first_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( '25' ).  "length of column A
+
+
+***********************************************************************
+*    lo_node_add_col = lo_node_first_col->clone( ).
+*    lo_attrs_map = lo_node_add_col->get_attributes( ).
+*    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `25` ).
+*    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `1` ).
+*    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `1` ).
+*
+*    lo_node->append_child( new_child =  lo_node_add_col ).
+
+    lo_node_add_col = lo_node_first_col->clone( ).
+    lo_attrs_map = lo_node_add_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `46` ).
+    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `2` ).
+    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `2` ).
+
+    lo_node->append_child( new_child =  lo_node_add_col ).
+
+    lo_node_add_col = lo_node_first_col->clone( ).
+    lo_attrs_map = lo_node_add_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `19` ).
+    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `3` ).
+    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `3` ).
+
+    lo_node->append_child( new_child =  lo_node_add_col ).
+
+    lo_node_add_col = lo_node_first_col->clone( ).
+    lo_attrs_map = lo_node_add_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `8` ).
+    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `4` ).
+    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `4` ).
+
+    lo_node->append_child( new_child =  lo_node_add_col ).
+
+    lo_node_add_col = lo_node_first_col->clone( ).
+    lo_attrs_map = lo_node_add_col->get_attributes( ).
+    lo_attrs_map->get_named_item_ns( name = 'width' )->set_value( value = `7` ).
+    lo_attrs_map->get_named_item_ns( name = 'max' )->set_value( value = `5` ).
+    lo_attrs_map->get_named_item_ns( name = 'min' )->set_value( value = `5` ).
+
+    lo_node->append_child( new_child =  lo_node_add_col ).
+**********************************************************************
+    " row index start from 0, if input nothing, the row will be ignored from index
+    lo_node      = lo_xml_document->find_node( name = 'sheetData' ).
+    lo_node_rows = lo_node->get_children( ).
+
+    " set height of row
+    " adjust the height of the first header
+    lo_node      = lo_node_rows->get_item( 0 ).
+    lo_attrs_map = lo_node->get_attributes( ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'ht' ).
+    lo_node_attr->set_value( '25.5' )." adjust the height of 1st row
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'customHeight' ).
+    lo_node_attr->set_value( '1' ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 'customFormat' ).
+    lo_node_attr->set_value( '1' ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+    " reference node 'r'
+    lo_node_attr = lo_attrs_map->get_named_item_ns( name = 'r' )->clone( ).
+    lo_node_attr->set_name( 's' ).
+    lo_node_attr->set_value( lv_style_text ).
+    lo_attrs_map->set_named_item_ns( node = lo_node_attr ).
+
+
+
+*Lohid**********************************************************************
 
     lo_xml_document->render_2_xstring( IMPORTING stream = lo_formarted ).
     lo_wordsheetpart->feed_data( lo_formarted ).
@@ -2135,7 +2528,7 @@ CLASS zcl_template_download_util IMPLEMENTATION.
            END OF lty_st_field_name_mapping,
 
            lty_tt_field_name_mapping TYPE HASHED TABLE OF lty_st_field_name_mapping
-                                WITH UNIQUE KEY cell_name cell_posi,
+                 WITH UNIQUE KEY cell_name cell_posi,
 
            BEGIN OF lty_st_value_pair,
              index TYPE  char100,

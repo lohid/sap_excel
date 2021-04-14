@@ -21,15 +21,15 @@ TYPES:
   gty_t_cells TYPE STANDARD TABLE OF gty_s_cell WITH NON-UNIQUE KEY position INITIAL SIZE 1 .
 
 TYPES: BEGIN OF gty_s_col,
-      position    TYPE i,
-      customwidth TYPE i,
-      style       TYPE i,
-      width       TYPE string,
-      max         TYPE i,
-      min         TYPE i,
-      hidden      TYPE i,
-      bestFit     TYPE i,
-    END OF gty_s_col.
+         position    TYPE i,
+         customwidth TYPE i,
+         style       TYPE i,
+         width       TYPE string,
+         max         TYPE i,
+         min         TYPE i,
+         hidden      TYPE i,
+         bestFit     TYPE i,
+       END OF gty_s_col.
 
 TYPES:
   BEGIN OF gty_s_row,
@@ -112,18 +112,18 @@ CLASS lcl_xlsx_style DEFINITION.
     DATA: mv_has_change TYPE abap_bool.
     METHODS: init_create RAISING cx_dynamic_check.
     METHODS: init_with_xml IMPORTING iv_xml TYPE xstring
-                           RAISING cx_dynamic_check.
+                           RAISING   cx_dynamic_check.
     METHODS: to_xml RETURNING VALUE(rv_xml) TYPE xstring
-                    RAISING cx_dynamic_check,
-    get_default_date_style
-      RETURNING
-          VALUE(rv_style) TYPE GTY_S_CELL-STYLE,
-    get_default_time_style
-      RETURNING
-          VALUE(rv_style) TYPE GTY_S_CELL-STYLE,
-    get_default_tstmp_style
-      RETURNING
-          VALUE(rv_style) TYPE GTY_S_CELL-STYLE.
+                    RAISING   cx_dynamic_check,
+      get_default_date_style
+        RETURNING
+          VALUE(rv_style) TYPE gty_s_cell-style,
+      get_default_time_style
+        RETURNING
+          VALUE(rv_style) TYPE gty_s_cell-style,
+      get_default_tstmp_style
+        RETURNING
+          VALUE(rv_style) TYPE gty_s_cell-style.
   PRIVATE SECTION.
     DATA: mt_cellxfs         TYPE gty_t_cellxfs,
           mv_style_date      TYPE i,
@@ -137,8 +137,8 @@ CLASS lcl_xlsx_style DEFINITION.
       RAISING
         cx_dynamic_check.
     METHODS prepare_styles_xml
-              IMPORTING
-                iv_cellxfs_count TYPE i
+      IMPORTING
+        iv_cellxfs_count     TYPE i
       RETURNING
         VALUE(rv_styles_xml) TYPE string
       RAISING
@@ -153,7 +153,7 @@ CLASS lcl_xlsx_doc DEFINITION.
     INTERFACES zif_mpa_xlsx_doc.
     DATA: mo_xlsx_document TYPE REF TO cl_xlsx_document.
     DATA: mo_workbookpart  TYPE REF TO cl_xlsx_workbookpart.
-    DATA: mo_string_util TYPE REF TO cl_ehfnd_exp_xlsx_string_util.
+    DATA: mo_string_util TYPE REF TO zcl_xlsx_string_util.
     DATA: mo_xlsx_style TYPE REF TO lcl_xlsx_style.
     METHODS constructor.
     METHODS initialize RAISING cx_openxml_not_found
@@ -185,7 +185,7 @@ CLASS lcl_xlsx_doc DEFINITION.
                 iv_sheet_name        TYPE string
                 io_worksheet_part    TYPE REF TO cl_xlsx_worksheetpart
       RETURNING VALUE(rs_sheet_info) TYPE zcl_mpa_xlsx=>gty_s_sheet_info
-      RAISING cx_dynamic_check.
+      RAISING   cx_dynamic_check.
 
     METHODS get_sheet_by_rid
       IMPORTING iv_rid          TYPE string
@@ -222,7 +222,7 @@ CLASS lcl_xlsx_sheet DEFINITION.
     DATA: mo_xlsx_doc TYPE REF TO lcl_xlsx_doc.
     METHODS: constructor IMPORTING io_xlsx_doc       TYPE REF TO lcl_xlsx_doc
                                    io_worksheet_part TYPE REF TO cl_xlsx_worksheetpart
-                         RAISING cx_dynamic_check,
+                         RAISING   cx_dynamic_check,
       serialize
         RETURNING
           VALUE(rv_xml) TYPE xstring
@@ -397,7 +397,7 @@ CLASS lcl_xlsx_doc IMPLEMENTATION.
     mo_workbookpart = mo_xlsx_document->get_workbookpart( ).
     mv_workbook_xml = mo_workbookpart->get_data( ).
 *   Get the names and ids of all available sheets and the number of the currently active sheet
-    CALL TRANSFORMATION ehfnd_exp_xlsx_get_sheet_names
+    CALL TRANSFORMATION xl_mpa_get_sheet_names
       SOURCE XML mv_workbook_xml RESULT workbook_data = ms_workbook_data.
 
     " Determine the current maximum sheet ID.
@@ -519,7 +519,7 @@ CLASS lcl_xlsx_doc IMPLEMENTATION.
 *   Insert the new sheet into the workbook XML
     IF ( mv_workbook_xml IS INITIAL ).
 *     We do not have a workbook XML so we have to create one from scratch
-      CALL TRANSFORMATION ehfnd_exp_xlsx_create_workbook
+      CALL TRANSFORMATION xl_mpa_create_workbook
                    SOURCE param = is_sheet_info
                RESULT XML mv_workbook_xml.
     ELSE.
@@ -530,7 +530,7 @@ CLASS lcl_xlsx_doc IMPLEMENTATION.
 *     must be increased by 1.
       ADD 1 TO ms_workbook_data-active_sheet.
 
-      CALL TRANSFORMATION ehfnd_exp_xlsx_insert_sheet
+      CALL TRANSFORMATION xl_mpa_insert_sheet
                PARAMETERS active_sheet = ms_workbook_data-active_sheet
                           sheet_name   = is_sheet_info-name
                           sheet_id     = is_sheet_info-sheet_id
@@ -641,7 +641,7 @@ CLASS lcl_xlsx_doc IMPLEMENTATION.
 ***************************************************************************
 * FUNCTIONAL BODY
 ***************************************************************************
-    if mo_xlsx_style->mv_has_change EQ abap_true.
+    IF mo_xlsx_style->mv_has_change EQ abap_true.
       IF mo_stylespart IS INITIAL.
         mo_stylespart = mo_workbookpart->add_stylespart( ).
       ENDIF.
@@ -732,7 +732,7 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
     CREATE DATA rr_s_cell.
     rr_s_cell->output_colnum = iv_column_number.
 *   Get the Excel cell name like 'A1'
-    rr_s_cell->position = cl_ehfnd_exp_xlsx_helper=>get_cell_position( iv_row    = iv_row_number
+    rr_s_cell->position = zcl_xlsx_helper=>get_cell_position( iv_row    = iv_row_number
                                                                        iv_column = iv_column_number ).
     APPEND rr_s_cell->* TO lr_s_row->cells_tab REFERENCE INTO rr_s_cell.
   ENDMETHOD.
@@ -949,19 +949,19 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
         " convert the importing data to date
         lv_date = iv_value.
         " call date conversion
-        ev_converted_value = cl_ehfnd_exp_xlsx_helper=>convert_date_to_xlsx_date( iv_date = lv_date ).
+        ev_converted_value = zcl_xlsx_helper=>convert_date_to_xlsx_date( iv_date = lv_date ).
 
       WHEN zif_mpa_xlsx_sheet=>gc_celltype-time.
         " convert the importing data to time
         lv_time = iv_value.
         " call time conversion
-        ev_converted_value = cl_ehfnd_exp_xlsx_helper=>convert_time_to_xlsx_time( iv_time = lv_time ).
+        ev_converted_value = zcl_xlsx_helper=>convert_time_to_xlsx_time( iv_time = lv_time ).
 
       WHEN zif_mpa_xlsx_sheet=>gc_celltype-timestamp.
         " convert the importing data to timestamp
         lv_timestamp = iv_value.
         " call timestamp conversion
-        ev_converted_value = cl_ehfnd_exp_xlsx_helper=>convert_timestamp_to_xlsx( iv_timestamp = lv_timestamp ).
+        ev_converted_value = zcl_xlsx_helper=>convert_timestamp_to_xlsx( iv_timestamp = lv_timestamp ).
 
 
       WHEN zif_mpa_xlsx_sheet=>gc_celltype-numericchar.
@@ -1011,7 +1011,7 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
     lv_xml = mo_worksheet_part->get_data( ).
 
 *   Read the Sheet
-    CALL TRANSFORMATION ehfnd_exp_xlsx_read_sheet
+    CALL TRANSFORMATION xl_mpa_read_sheet
         SOURCE XML lv_xml
         RESULT rows = ms_sheet_data-rows_tab
                cols = ms_sheet_data-cols_tab .
@@ -1025,7 +1025,7 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
           CLEAR lr_s_cell->value.
         ENDIF.
 *       Get the column index for the position
-        lr_s_cell->output_colnum = cl_ehfnd_exp_xlsx_helper=>get_cell_column( lr_s_cell->position ).
+        lr_s_cell->output_colnum = zcl_xlsx_helper=>get_cell_column( lr_s_cell->position ).
       ENDLOOP.
     ENDLOOP.
 
@@ -1040,8 +1040,17 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
     cleanup_sheet_data( ).
 *   Then determine the dimensions
     ms_sheet_data-dim = determine_sheet_dimension( ).
+    ms_sheet_data-cols_tab = VALUE #( (  position = 1
+                                         customwidth = 1
+*                                         style
+                                         width = 100
+                                         max = 1
+                                         min = 1
+*                                         hidden  type i
+                                         bestfit = 1
+     ) ).
 *   Create a new sheet XML with the data
-    CALL TRANSFORMATION ehfnd_exp_xlsx_create_sheet
+    CALL TRANSFORMATION xl_mpa_create_sheet
                SOURCE param = ms_sheet_data
            RESULT XML rv_xml.
   ENDMETHOD.
@@ -1079,7 +1088,7 @@ CLASS lcl_xlsx_sheet IMPLEMENTATION.
     ENDLOOP.
 
 *   Then determine the Position in Excel language
-    lv_endcell = cl_ehfnd_exp_xlsx_helper=>get_cell_position(
+    lv_endcell = zcl_xlsx_helper=>get_cell_position(
                  iv_row      = lv_endrow
                  iv_column   = lv_endcolumn
              ).
@@ -1166,7 +1175,7 @@ CLASS lcl_xlsx_style IMPLEMENTATION.
     mv_has_change = abap_true.
 
 *   Add style
-    CALL TRANSFORMATION ehfnd_exp_xlsx_create_styles
+    CALL TRANSFORMATION xl_mpa_create_styles
         SOURCE param = lv_dummy
         RESULT XML lv_styles_xml.
 
@@ -1182,7 +1191,7 @@ CLASS lcl_xlsx_style IMPLEMENTATION.
     mv_base_xml = iv_xml.
 
 *   Get existing cellXfs
-    CALL TRANSFORMATION ehfnd_exp_xlsx_get_cellxfs
+    CALL TRANSFORMATION XL_MPA_get_cellxfs
     SOURCE XML iv_xml
     RESULT cellxfs = mt_cellxfs.
 
@@ -1328,7 +1337,7 @@ CLASS lcl_xlsx_style IMPLEMENTATION.
     ls_style_struct-t_cellxfs = mt_cellxfs.
 
     " Transform cellxfs part to XML (xstring)
-    CALL TRANSFORMATION ehfnd_exp_xlsx_set_cellxfs
+    CALL TRANSFORMATION xl_mpa_set_cellxfs
     SOURCE param = ls_style_struct
     RESULT XML rv_cellxfs.
 
@@ -1348,7 +1357,7 @@ CLASS lcl_xlsx_style IMPLEMENTATION.
           lv_dummy         TYPE string,
           lv_delete        TYPE string,
           lv_styles_xml    TYPE xstring,
-          lv_dummy2 TYPE string.
+          lv_dummy2        TYPE string.
 
 ***************************************************************************
 * FUNCTIONAL BODY
@@ -1366,7 +1375,7 @@ CLASS lcl_xlsx_style IMPLEMENTATION.
     lv_styles_xml = cl_openxml_helper=>string_to_xstring( lv_styles_string ).
 
     " Add placeholder for cellXfs
-    CALL TRANSFORMATION ehfnd_exp_xlsx_add_cellxfs
+    CALL TRANSFORMATION xl_mpa_add_cellxfs
       SOURCE XML lv_styles_xml
       RESULT XML lv_styles_xml
       PARAMETERS cellxfs_count = iv_cellxfs_count.
